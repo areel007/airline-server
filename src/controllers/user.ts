@@ -68,7 +68,7 @@ export const registerUser = [
   },
 ];
 
-// user login handler
+// User login handler
 // Validation middleware
 const validateLogin = [
   body("email").isEmail().withMessage("Please provide a valid email"),
