@@ -19,6 +19,7 @@ if (process.env.DATABASE && process.env.DATABASE_PASSWORD) {
     "DATABASE or DATABASE_PASSWORD environment variable is not defined"
   );
   // Handle the situation where environment variables are not defined
+  //#
 }
 
 app.listen(port, () => console.log(`Server running on ${port}`));
