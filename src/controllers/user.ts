@@ -3,9 +3,10 @@ import bcrypt from "bcrypt";
 import { body, validationResult } from "express-validator";
 import jwt from "jsonwebtoken";
 import User from "../models/user";
+import crypto from "crypto";
+import nodemailer from "nodemailer";
 
 // Register user
-
 // Validation middleware
 const validateUser = [
   body("name")
@@ -71,7 +72,6 @@ export const registerUser = [
 ];
 
 // User login handler
-
 // Validation middleware
 const validateLogin = [
   body("email").isEmail().withMessage("Please provide a valid email"),
@@ -119,4 +119,62 @@ export const loginUser = [
   },
 ];
 
-// Hello
+// Forgot password
+// Validation middleware
+const validateEmail = [
+  body("email").isEmail().withMessage("Please provide a valid email"),
+];
+
+export const requestPasswordReset = [
+  ...validateEmail,
+  async (req: Request, res: Response) => {
+    const errors = validationResult(req);
+    if (!errors.isEmpty()) {
+      return res.status(400).json({ errors: errors.array() });
+    }
+
+    const { email } = req.body;
+
+    try {
+      // Find the user by email
+      const user = await User.findOne({ email });
+      if (!user) {
+        return res.status(404).json({ message: "User not found" });
+      }
+
+      // Generate a reset token
+      const resetToken = crypto.randomBytes(32).toString("hex");
+      const resetTokenExpiry = new Date(Date.now() + 3600000); // Token valid for 1 hour
+
+      // Save the token and its expiry to the user's record
+      user.resetPasswordToken = resetToken;
+      user.resetPasswordExpires = resetTokenExpiry;
+      await user.save();
+
+      // Create a transport for sending email
+      const transporter = nodemailer.createTransport({
+        service: "Gmail", // You can use any email service
+        auth: {
+          user: process.env.EMAIL_USERNAME,
+          pass: process.env.EMAIL_PASSWORD,
+        },
+      });
+
+      // Send the reset email
+      const resetLink = `http://localhost:3000/reset-password?token=${resetToken}&email=${email}`;
+      const mailOptions = {
+        from: process.env.EMAIL_USERNAME,
+        to: email,
+        subject: "Password Reset Request",
+        text: `You requested a password reset. Click the link below to reset your password:\n\n${resetLink}`,
+      };
+
+      await transporter.sendMail(mailOptions);
+
+      res.status(200).json({ message: "Password reset email sent" });
+    } catch (error) {
+      console.error("Error during password reset request:", error);
+      res.status(500).json({ message: "Internal server error" });
+    }
+  },
+];
