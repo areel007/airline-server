@@ -178,3 +178,52 @@ export const requestPasswordReset = [
     }
   },
 ];
+
+// Validation middleware
+const validateReset = [
+  body("password")
+    .isLength({ min: 6 })
+    .withMessage("Password must be at least 6 characters long"),
+];
+
+export const resetPassword = [
+  ...validateReset,
+  async (req: Request, res: Response) => {
+    const errors = validationResult(req);
+    if (!errors.isEmpty()) {
+      return res.status(400).json({ errors: errors.array() });
+    }
+
+    const { token, email } = req.query;
+    const { password } = req.body;
+
+    try {
+      // Find the user by email and reset token
+      const user = await User.findOne({
+        email,
+        resetPasswordToken: token,
+        resetPasswordExpires: { $gt: Date.now() }, // Check token expiration
+      });
+
+      if (!user) {
+        return res.status(400).json({ message: "Invalid or expired token" });
+      }
+
+      // Hash the new password
+      const saltRounds = 10;
+      user.password = await bcrypt.hash(password, saltRounds);
+
+      // Clear the reset token fields
+      user.resetPasswordToken = undefined;
+      user.resetPasswordExpires = undefined;
+
+      // Save the updated user record
+      await user.save();
+
+      res.status(200).json({ message: "Password has been reset" });
+    } catch (error) {
+      console.error("Error during password reset:", error);
+      res.status(500).json({ message: "Internal server error" });
+    }
+  },
+];
