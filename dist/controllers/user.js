@@ -3,7 +3,7 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.requestPasswordReset = exports.loginUser = exports.registerUser = void 0;
+exports.resetPassword = exports.requestPasswordReset = exports.loginUser = exports.registerUser = void 0;
 const bcrypt_1 = __importDefault(require("bcrypt"));
 const express_validator_1 = require("express-validator");
 const jsonwebtoken_1 = __importDefault(require("jsonwebtoken"));
@@ -147,6 +147,48 @@ exports.requestPasswordReset = [
         }
         catch (error) {
             console.error("Error during password reset request:", error);
+            res.status(500).json({ message: "Internal server error" });
+        }
+    },
+];
+// Validation middleware
+const validatePassword = [
+    (0, express_validator_1.body)("password")
+        .isLength({ min: 6 })
+        .withMessage("Password must be at least 6 characters long"),
+];
+exports.resetPassword = [
+    ...validatePassword,
+    async (req, res) => {
+        const errors = (0, express_validator_1.validationResult)(req);
+        if (!errors.isEmpty()) {
+            return res.status(400).json({ errors: errors.array() });
+        }
+        const { token, email } = req.query; // Get token and email from query parameters
+        const { password } = req.body; // Get the new password from the request body
+        try {
+            // Find the user by email and reset token, ensuring the token is not expired
+            const user = await user_1.default.findOne({
+                email,
+                resetPasswordToken: token,
+                resetPasswordExpires: { $gt: Date.now() }, // Ensure the token is not expired
+            });
+            if (!user) {
+                return res.status(400).json({ message: "Invalid or expired token" });
+            }
+            console.log("User found for password reset:", user.email);
+            // Hash the new password
+            const saltRounds = 10;
+            user.password = await bcrypt_1.default.hash(password, saltRounds);
+            // Clear the reset token fields
+            user.resetPasswordToken = undefined;
+            user.resetPasswordExpires = undefined;
+            // Save the updated user record
+            await user.save();
+            res.status(200).json({ message: "Password has been reset successfully" });
+        }
+        catch (error) {
+            console.error("Error during password reset:", error);
             res.status(500).json({ message: "Internal server error" });
         }
     },

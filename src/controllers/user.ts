@@ -180,34 +180,36 @@ export const requestPasswordReset = [
 ];
 
 // Validation middleware
-const validateReset = [
+const validatePassword = [
   body("password")
     .isLength({ min: 6 })
     .withMessage("Password must be at least 6 characters long"),
 ];
 
 export const resetPassword = [
-  ...validateReset,
+  ...validatePassword,
   async (req: Request, res: Response) => {
     const errors = validationResult(req);
     if (!errors.isEmpty()) {
       return res.status(400).json({ errors: errors.array() });
     }
 
-    const { token, email } = req.query;
-    const { password } = req.body;
+    const { token, email } = req.query; // Get token and email from query parameters
+    const { password } = req.body; // Get the new password from the request body
 
     try {
-      // Find the user by email and reset token
+      // Find the user by email and reset token, ensuring the token is not expired
       const user = await User.findOne({
         email,
         resetPasswordToken: token,
-        resetPasswordExpires: { $gt: Date.now() }, // Check token expiration
+        resetPasswordExpires: { $gt: Date.now() }, // Ensure the token is not expired
       });
 
       if (!user) {
         return res.status(400).json({ message: "Invalid or expired token" });
       }
+
+      console.log("User found for password reset:", user.email);
 
       // Hash the new password
       const saltRounds = 10;
@@ -220,7 +222,7 @@ export const resetPassword = [
       // Save the updated user record
       await user.save();
 
-      res.status(200).json({ message: "Password has been reset" });
+      res.status(200).json({ message: "Password has been reset successfully" });
     } catch (error) {
       console.error("Error during password reset:", error);
       res.status(500).json({ message: "Internal server error" });
