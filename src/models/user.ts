@@ -1,4 +1,5 @@
 import { Schema, model } from "mongoose";
+import UserDocument from "../types/user.document";
 
 const userSchema = new Schema({
   name: {
@@ -46,5 +47,5 @@ const userSchema = new Schema({
   },
 });
 
-const User = model("User", userSchema);
+const User = model<UserDocument>("User", userSchema);
 export default User;
