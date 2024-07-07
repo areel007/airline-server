@@ -4,6 +4,7 @@ import morgan from "morgan";
 import dotenv from "dotenv";
 import helmet from "helmet";
 import rateLimit from "express-rate-limit";
+import routes from "./routes/index";
 
 const app = express();
 
@@ -53,5 +54,7 @@ app.use(express.json());
 
 // Handle preflight requests
 // app.options("*", cors(corsOptions));
+
+app.use(routes);
 
 export default app;

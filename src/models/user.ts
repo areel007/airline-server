@@ -37,6 +37,18 @@ const userSchema = new Schema({
       ref: "Booking",
     },
   ],
+  resetPasswordToken: {
+    type: String,
+  },
+  resetPasswordExpires: {
+    type: Date,
+  },
+  role: {
+    type: String,
+    enum: ["customer", "admin", "super-admin"],
+    default: "customer",
+    required: true,
+  },
   createdAt: {
     type: Date,
     default: Date.now,

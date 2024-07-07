@@ -9,6 +9,7 @@ const morgan_1 = __importDefault(require("morgan"));
 const dotenv_1 = __importDefault(require("dotenv"));
 const helmet_1 = __importDefault(require("helmet"));
 const express_rate_limit_1 = __importDefault(require("express-rate-limit"));
+const index_1 = __importDefault(require("./routes/index"));
 const app = (0, express_1.default)();
 dotenv_1.default.config({ path: "./config.env" });
 // Apply Helmet middleware for security
@@ -47,4 +48,5 @@ if (process.env.NODE_ENV === "development") {
 app.use(express_1.default.json());
 // Handle preflight requests
 // app.options("*", cors(corsOptions));
+app.use(index_1.default);
 exports.default = app;
