@@ -3,27 +3,17 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.resetPassword = exports.requestPasswordReset = exports.loginUser = exports.registerUser = void 0;
+exports.getUsers = exports.resetPassword = exports.requestPasswordReset = exports.loginUser = exports.registerUser = void 0;
 const bcrypt_1 = __importDefault(require("bcrypt"));
 const express_validator_1 = require("express-validator");
 const jsonwebtoken_1 = __importDefault(require("jsonwebtoken"));
 const user_1 = __importDefault(require("../models/user"));
 const crypto_1 = __importDefault(require("crypto"));
 const nodemailer_1 = __importDefault(require("nodemailer"));
+const auth_1 = require("../middlewares/auth");
 // Register user
-// Validation middleware
-const validateUser = [
-    (0, express_validator_1.body)("name")
-        .isString()
-        .isLength({ min: 3 })
-        .withMessage("Name must be at least 3 characters long"),
-    (0, express_validator_1.body)("email").isEmail().withMessage("Please provide a valid email"),
-    (0, express_validator_1.body)("password")
-        .isLength({ min: 6 })
-        .withMessage("Password must be at least 6 characters long"),
-];
 exports.registerUser = [
-    ...validateUser,
+    ...auth_1.validateUser,
     async (req, res) => {
         const errors = (0, express_validator_1.validationResult)(req);
         if (!errors.isEmpty()) {
@@ -61,13 +51,8 @@ exports.registerUser = [
     },
 ];
 // User login handler
-// Validation middleware
-const validateLogin = [
-    (0, express_validator_1.body)("email").isEmail().withMessage("Please provide a valid email"),
-    (0, express_validator_1.body)("password").notEmpty().withMessage("Password is required"),
-];
 exports.loginUser = [
-    ...validateLogin,
+    ...auth_1.validateLogin,
     async (req, res) => {
         const errors = (0, express_validator_1.validationResult)(req);
         if (!errors.isEmpty()) {
@@ -86,13 +71,12 @@ exports.loginUser = [
                 return res.status(401).json({ message: "Invalid email or password" });
             }
             // Generate a JWT token
-            const token = jsonwebtoken_1.default.sign({ userId: user._id, email: user.email }, process.env.JWT_SECRET, // Ensure JWT_SECRET is set in your environment variables
-            { expiresIn: "1h" } // Token expiration time
-            );
+            const token = jsonwebtoken_1.default.sign({ userId: user._id, email: user.email, role: user.role }, process.env.JWT_SECRET, { expiresIn: "1h" });
             // Send the token in the response
-            res
-                .status(200)
-                .json({ token, user: { id: user._id, email: user.email } });
+            res.status(200).json({
+                token,
+                user: { id: user._id, email: user.email, role: user.role },
+            });
         }
         catch (error) {
             console.error("Error logging in:", error);
@@ -100,13 +84,9 @@ exports.loginUser = [
         }
     },
 ];
-// Forgot password
-// Validation middleware
-const validateEmail = [
-    (0, express_validator_1.body)("email").isEmail().withMessage("Please provide a valid email"),
-];
+// Forgot password reser request
 exports.requestPasswordReset = [
-    ...validateEmail,
+    ...auth_1.validateEmail,
     async (req, res) => {
         const errors = (0, express_validator_1.validationResult)(req);
         if (!errors.isEmpty()) {
@@ -151,14 +131,9 @@ exports.requestPasswordReset = [
         }
     },
 ];
-// Validation middleware
-const validatePassword = [
-    (0, express_validator_1.body)("password")
-        .isLength({ min: 6 })
-        .withMessage("Password must be at least 6 characters long"),
-];
+// Password reset handler
 exports.resetPassword = [
-    ...validatePassword,
+    ...auth_1.validatePassword,
     async (req, res) => {
         const errors = (0, express_validator_1.validationResult)(req);
         if (!errors.isEmpty()) {
@@ -176,7 +151,6 @@ exports.resetPassword = [
             if (!user) {
                 return res.status(400).json({ message: "Invalid or expired token" });
             }
-            console.log("User found for password reset:", user.email);
             // Hash the new password
             const saltRounds = 10;
             user.password = await bcrypt_1.default.hash(password, saltRounds);
@@ -193,3 +167,14 @@ exports.resetPassword = [
         }
     },
 ];
+const getUsers = async (req, res) => {
+    try {
+        const users = await user_1.default.find();
+        res.status(200).json({ users });
+    }
+    catch (error) {
+        console.error("Error during password reset:", error);
+        res.status(500).json({ message: "Internal server error" });
+    }
+};
+exports.getUsers = getUsers;

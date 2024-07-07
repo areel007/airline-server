@@ -5,6 +5,7 @@ interface UserDocument extends Document {
   password: string;
   name: string;
   bookings: string[]; // Adjust this based on your schema
+  role: string;
   createdAt: Date;
   updatedAt: Date;
   phoneNumber?: string | null;

@@ -1,24 +1,19 @@
 import { Request, Response } from "express";
 import bcrypt from "bcrypt";
-import { body, validationResult } from "express-validator";
+import { validationResult } from "express-validator";
 import jwt from "jsonwebtoken";
 import User from "../models/user";
 import crypto from "crypto";
 import nodemailer from "nodemailer";
+import {
+  validateUser,
+  validateLogin,
+  validateEmail,
+  validatePassword,
+} from "../middlewares/auth";
+import IRequestHandlers from "../types/handlers";
 
 // Register user
-// Validation middleware
-const validateUser = [
-  body("name")
-    .isString()
-    .isLength({ min: 3 })
-    .withMessage("Name must be at least 3 characters long"),
-  body("email").isEmail().withMessage("Please provide a valid email"),
-  body("password")
-    .isLength({ min: 6 })
-    .withMessage("Password must be at least 6 characters long"),
-];
-
 export const registerUser = [
   ...validateUser,
   async (req: Request, res: Response) => {
@@ -72,15 +67,9 @@ export const registerUser = [
 ];
 
 // User login handler
-// Validation middleware
-const validateLogin = [
-  body("email").isEmail().withMessage("Please provide a valid email"),
-  body("password").notEmpty().withMessage("Password is required"),
-];
-
 export const loginUser = [
   ...validateLogin,
-  async (req: Request, res: Response) => {
+  async (req: IRequestHandlers, res: Response) => {
     const errors = validationResult(req);
     if (!errors.isEmpty()) {
       return res.status(400).json({ errors: errors.array() });
@@ -103,15 +92,16 @@ export const loginUser = [
 
       // Generate a JWT token
       const token = jwt.sign(
-        { userId: user._id, email: user.email },
-        process.env.JWT_SECRET!, // Ensure JWT_SECRET is set in your environment variables
-        { expiresIn: "1h" } // Token expiration time
+        { userId: user._id, email: user.email, role: user.role },
+        process.env.JWT_SECRET!,
+        { expiresIn: "1h" }
       );
 
       // Send the token in the response
-      res
-        .status(200)
-        .json({ token, user: { id: user._id, email: user.email } });
+      res.status(200).json({
+        token,
+        user: { id: user._id, email: user.email, role: user.role },
+      });
     } catch (error) {
       console.error("Error logging in:", error);
       res.status(500).json({ message: "Internal server error" });
@@ -119,12 +109,7 @@ export const loginUser = [
   },
 ];
 
-// Forgot password
-// Validation middleware
-const validateEmail = [
-  body("email").isEmail().withMessage("Please provide a valid email"),
-];
-
+// Forgot password reser request
 export const requestPasswordReset = [
   ...validateEmail,
   async (req: Request, res: Response) => {
@@ -179,13 +164,7 @@ export const requestPasswordReset = [
   },
 ];
 
-// Validation middleware
-const validatePassword = [
-  body("password")
-    .isLength({ min: 6 })
-    .withMessage("Password must be at least 6 characters long"),
-];
-
+// Password reset handler
 export const resetPassword = [
   ...validatePassword,
   async (req: Request, res: Response) => {
@@ -209,8 +188,6 @@ export const resetPassword = [
         return res.status(400).json({ message: "Invalid or expired token" });
       }
 
-      console.log("User found for password reset:", user.email);
-
       // Hash the new password
       const saltRounds = 10;
       user.password = await bcrypt.hash(password, saltRounds);
@@ -229,3 +206,13 @@ export const resetPassword = [
     }
   },
 ];
+
+export const getUsers = async (req: Request, res: Response) => {
+  try {
+    const users = await User.find();
+    res.status(200).json({ users });
+  } catch (error) {
+    console.error("Error during password reset:", error);
+    res.status(500).json({ message: "Internal server error" });
+  }
+};
