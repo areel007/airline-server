@@ -183,7 +183,7 @@ const updateRole = async (req, res) => {
         const { id } = req.params;
         const { role } = req.body;
         const user = await user_1.default.findByIdAndUpdate(id, { role });
-        res.status(200).json({ user });
+        res.status(200).json({ msg: "role successfully updated" });
     }
     catch (error) {
         console.error("Error during password reset:", error);

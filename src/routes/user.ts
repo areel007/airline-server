@@ -12,17 +12,14 @@ import { authenticateToken } from "../middlewares/auth";
 
 const router = Router();
 
-router.route("/auth/register").post(registerUser);
+router.route("/register").post(registerUser);
 
-router.route("/auth/login").post(loginUser);
+router.route("/login").post(loginUser);
 
-router
-  .route("/auth/reset-password")
-  .post(requestPasswordReset)
-  .patch(resetPassword);
+router.route("/reset-password").post(requestPasswordReset).patch(resetPassword);
 
 router
-  .route("/auth/update-role/:id")
+  .route("/update-role/:id")
   .patch(authenticateToken, checkRole("super-admin"), updateRole);
 
 router
