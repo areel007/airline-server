@@ -216,3 +216,15 @@ export const getUsers = async (req: Request, res: Response) => {
     res.status(500).json({ message: "Internal server error" });
   }
 };
+
+export const updateRole = async (req: Request, res: Response) => {
+  try {
+    const { id } = req.params;
+    const { role } = req.body;
+    const user = await User.findByIdAndUpdate(id, { role });
+    res.status(200).json({ msg: "role successfully updated" });
+  } catch (error) {
+    console.error("Error during password reset:", error);
+    res.status(500).json({ message: "Internal server error" });
+  }
+};

@@ -3,7 +3,7 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.getUsers = exports.resetPassword = exports.requestPasswordReset = exports.loginUser = exports.registerUser = void 0;
+exports.updateRole = exports.getUsers = exports.resetPassword = exports.requestPasswordReset = exports.loginUser = exports.registerUser = void 0;
 const bcrypt_1 = __importDefault(require("bcrypt"));
 const express_validator_1 = require("express-validator");
 const jsonwebtoken_1 = __importDefault(require("jsonwebtoken"));
@@ -178,3 +178,16 @@ const getUsers = async (req, res) => {
     }
 };
 exports.getUsers = getUsers;
+const updateRole = async (req, res) => {
+    try {
+        const { id } = req.params;
+        const { role } = req.body;
+        const user = await user_1.default.findByIdAndUpdate(id, { role });
+        res.status(200).json({ user });
+    }
+    catch (error) {
+        console.error("Error during password reset:", error);
+        res.status(500).json({ message: "Internal server error" });
+    }
+};
+exports.updateRole = updateRole;

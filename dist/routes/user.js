@@ -12,6 +12,9 @@ router
     .post(user_1.requestPasswordReset)
     .patch(user_1.resetPassword);
 router
+    .route("/auth/update-role/:id")
+    .patch(auth_1.authenticateToken, (0, role_1.checkRole)("super-admin"), user_1.updateRole);
+router
     .route("/users")
     .get(auth_1.authenticateToken, (0, role_1.checkRole)("super-admin"), user_1.getUsers);
 exports.default = router;
